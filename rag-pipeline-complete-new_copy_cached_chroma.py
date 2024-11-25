@@ -4077,124 +4077,124 @@ class RAGPipeline:
 #             logger.error(f"Pipeline initialization failed: {str(e)}")
 #             raise
 
-    def __init__(
-            self,
-            collection_name: str = "azerbaijan_docs",
-            chunk_size: int = 512,
-            chunk_overlap: int = 50,
-            # embedding_model: str = "text-embedding-3-small",
-            embedding_model: str = "BAAI/bge-m3",
-            host: str = "localhost",
-            port: int = 19530,
-            language: str = "az",
-            device: str = None,
-            batch_size: int = 4,
-            cache_dir: str = "cache"
-        ):
-            try:
-                self.logger = logging.getLogger(__name__)
-                self.logger.info("Initializing RAGPipeline")
-                st.write("Starting RAGPipeline initialization...")
+#     def __init__(
+#             self,
+#             collection_name: str = "azerbaijan_docs",
+#             chunk_size: int = 512,
+#             chunk_overlap: int = 50,
+#             # embedding_model: str = "text-embedding-3-small",
+#             embedding_model: str = "BAAI/bge-m3",
+#             host: str = "localhost",
+#             port: int = 19530,
+#             language: str = "az",
+#             device: str = None,
+#             batch_size: int = 4,
+#             cache_dir: str = "cache"
+#         ):
+#             try:
+#                 self.logger = logging.getLogger(__name__)
+#                 self.logger.info("Initializing RAGPipeline")
+#                 st.write("Starting RAGPipeline initialization...")
 
-                log_memory_usage("Starting RAGPipeline init")
+#                 log_memory_usage("Starting RAGPipeline init")
     
-                self.batch_size = batch_size
-                self.device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
-                self.language = language
-                self.cache_dir = Path(cache_dir)
+#                 self.batch_size = batch_size
+#                 self.device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+#                 self.language = language
+#                 self.cache_dir = Path(cache_dir)
                 
-                # Create cache directory
-                self.cache_dir.mkdir(parents=True, exist_ok=True)
-                log_memory_usage("After cache directory setup")
-                self.logger.info(f"Cache directory created at {self.cache_dir}")
-                st.write(f"Cache directory setup completed")
+#                 # Create cache directory
+#                 self.cache_dir.mkdir(parents=True, exist_ok=True)
+#                 log_memory_usage("After cache directory setup")
+#                 self.logger.info(f"Cache directory created at {self.cache_dir}")
+#                 st.write(f"Cache directory setup completed")
 
-                # Initialize components with status updates
-                st.write("Initializing document processor...")
-                self.doc_processor = DocumentProcessor()
-                log_memory_usage("After document processor init")
-                self.logger.info("Document processor initialized")
+#                 # Initialize components with status updates
+#                 st.write("Initializing document processor...")
+#                 self.doc_processor = DocumentProcessor()
+#                 log_memory_usage("After document processor init")
+#                 self.logger.info("Document processor initialized")
 
-                st.write("Initializing chunking strategy...")
-                log_memory_usage("After chunking strategy init")
-                self.chunking_strategy = ChunkingStrategy(
-                    chunk_size=chunk_size,
-                    chunk_overlap=chunk_overlap
-                )
-                log_memory_usage("After chunk cache init")
-                self.logger.info("Chunking strategy initialized")
+#                 st.write("Initializing chunking strategy...")
+#                 log_memory_usage("After chunking strategy init")
+#                 self.chunking_strategy = ChunkingStrategy(
+#                     chunk_size=chunk_size,
+#                     chunk_overlap=chunk_overlap
+#                 )
+#                 log_memory_usage("After chunk cache init")
+#                 self.logger.info("Chunking strategy initialized")
 
-                st.write("Initializing chunk cache...")
-                self.chunk_cache = ChunkCache(cache_dir=f"{cache_dir}/chunks")
-                self.logger.info("Chunk cache initialized")
+#                 st.write("Initializing chunk cache...")
+#                 self.chunk_cache = ChunkCache(cache_dir=f"{cache_dir}/chunks")
+#                 self.logger.info("Chunk cache initialized")
 
-                # Initialize embedding model
-                st.write("Initializing embedding model...")
-                self.logger.info("Loading embedding model...")
-                OPENAI_API_KEY = st.secrets['OPENAI_API_KEY']
+#                 # Initialize embedding model
+#                 st.write("Initializing embedding model...")
+#                 self.logger.info("Loading embedding model...")
+#                 OPENAI_API_KEY = st.secrets['OPENAI_API_KEY']
 
 
-# inference api hf
-                HUGGINGFACE_API_KEY = st.secrets['HUGGINGFACE_API_KEY']
+# # inference api hf
+#                 HUGGINGFACE_API_KEY = st.secrets['HUGGINGFACE_API_KEY']
 
-                self.embedding_model = HuggingFaceEmbeddingModel(
-                    model_name="BAAI/bge-m3",
-                    api_key=st.secrets['HUGGINGFACE_API_KEY']
-                )
-# inference api hf
+#                 self.embedding_model = HuggingFaceEmbeddingModel(
+#                     model_name="BAAI/bge-m3",
+#                     api_key=st.secrets['HUGGINGFACE_API_KEY']
+#                 )
+# # inference api hf
 
-                # Initialize embedding model with caching
-                # self.embedding_model = CachedEmbeddingModel(
-                #     model_name=embedding_model,
-                #     device=device,
-                #     cache_dir=cache_dir,
-                #     # memory_cache_size=10000,
-                #     # use_disk_cache=True
-                # )
+#                 # Initialize embedding model with caching
+#                 # self.embedding_model = CachedEmbeddingModel(
+#                 #     model_name=embedding_model,
+#                 #     device=device,
+#                 #     cache_dir=cache_dir,
+#                 #     # memory_cache_size=10000,
+#                 #     # use_disk_cache=True
+#                 # )
 
-                # self.embedding_model = GPTEmbeddingModel(
-                #     model_name=embedding_model,
-                #     device=device,
-                #     api_key=OPENAI_API_KEY
-                # )
-                log_memory_usage("After embedding model init")
-                self.logger.info("Embedding model initialized")
-                st.write("Embedding model initialized successfully")
+#                 # self.embedding_model = GPTEmbeddingModel(
+#                 #     model_name=embedding_model,
+#                 #     device=device,
+#                 #     api_key=OPENAI_API_KEY
+#                 # )
+#                 log_memory_usage("After embedding model init")
+#                 self.logger.info("Embedding model initialized")
+#                 st.write("Embedding model initialized successfully")
 
-                # Initialize vector store
-                st.write("Initializing vector store...")
-                self.logger.info("Setting up vector store...")
-                self.vector_store = ChromaDBVectorStore(
-                    collection_name=collection_name,
-                    embedding_dim=self.embedding_model.dimension,
-                    persist_directory=f"{cache_dir}/vector_store"
-                )
-                log_memory_usage("After vector store init")
-                self.logger.info("Vector store initialized")
-                st.write("Vector store initialized successfully")
+#                 # Initialize vector store
+#                 st.write("Initializing vector store...")
+#                 self.logger.info("Setting up vector store...")
+#                 self.vector_store = ChromaDBVectorStore(
+#                     collection_name=collection_name,
+#                     embedding_dim=self.embedding_model.dimension,
+#                     persist_directory=f"{cache_dir}/vector_store"
+#                 )
+#                 log_memory_usage("After vector store init")
+#                 self.logger.info("Vector store initialized")
+#                 st.write("Vector store initialized successfully")
 
-                # Initialize other components
-                st.write("Initializing remaining components...")
-                # self.hyde = HyDEGenerator()
-                st.write("Initialized Hyde components...")
-                self.question_generator = GPTQuestionGenerator(api_key=OPENAI_API_KEY)
-                st.write("Initialized GPTQuestionGenerator components...")
-                self.reranker = ReRanker()
-                st.write("Initialized ReRanker components...")
-                self.repacker = Repacker()
-                st.write("Initialized Repacker components...")
-                self.summarizer = GPTDocumentSummarizer(api_key=OPENAI_API_KEY)
-                st.write("Initialized Summarizer components...")
+#                 # Initialize other components
+#                 st.write("Initializing remaining components...")
+#                 # self.hyde = HyDEGenerator()
+#                 st.write("Initialized Hyde components...")
+#                 self.question_generator = GPTQuestionGenerator(api_key=OPENAI_API_KEY)
+#                 st.write("Initialized GPTQuestionGenerator components...")
+#                 self.reranker = ReRanker()
+#                 st.write("Initialized ReRanker components...")
+#                 self.repacker = Repacker()
+#                 st.write("Initialized Repacker components...")
+#                 self.summarizer = GPTDocumentSummarizer(api_key=OPENAI_API_KEY)
+#                 st.write("Initialized Summarizer components...")
                 
-                self.logger.info("All components initialized successfully")
-                st.write("All pipeline components initialized successfully")
-                log_memory_usage("After all components initialization")
+#                 self.logger.info("All components initialized successfully")
+#                 st.write("All pipeline components initialized successfully")
+#                 log_memory_usage("After all components initialization")
 
-            except Exception as e:
-                error_msg = f"Pipeline initialization failed: {str(e)}"
-                self.logger.error(error_msg)
-                st.error(error_msg)
-                raise
+#             except Exception as e:
+#                 error_msg = f"Pipeline initialization failed: {str(e)}"
+#                 self.logger.error(error_msg)
+#                 st.error(error_msg)
+#                 raise
 
     def __init__(
             self,
@@ -4208,7 +4208,8 @@ class RAGPipeline:
             language: str = "az",
             device: str = None,
             batch_size: int = 4,
-            cache_dir: str = "cache"
+            cache_dir: str = "cache",
+            api_key: str = None  # Add this parameter
         ):
             try:
                 self.logger = logging.getLogger(__name__)
