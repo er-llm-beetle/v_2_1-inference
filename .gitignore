@@ -1,0 +1,11 @@
+rag_chroma_env
+rag_chroma_env/
+
+embeddings_cache_tema_chroma/
+# embeddings_cache_tema_chroma/chunks/
+# embeddings_cache_tema_chroma/embeddings/
+# embeddings_cache_tema_chroma/model/
+
+cache/model/LocalDoc_TEmA-small.pt
+
+.DS_Store
