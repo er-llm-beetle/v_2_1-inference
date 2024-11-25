@@ -1522,7 +1522,7 @@ class HuggingFaceEmbeddingModel:
         self,
         model_name: str = "BAAI/bge-m3",
         api_key: str = None,
-        device: str = None,  # Kept for compatibility but not used
+        device: str = None,
         batch_size: int = 8,
         max_retries: int = 3,
         retry_delay: int = 1
@@ -1532,10 +1532,7 @@ class HuggingFaceEmbeddingModel:
         self.batch_size = batch_size
         self.max_retries = max_retries
         self.retry_delay = retry_delay
-        
-        # Set embedding dimension
-        self.dimension = 1024  # BGE-M3 dimension
-        
+        self.dimension = 1024
         self.logger = logging.getLogger(__name__)
     
     def generate_embeddings(
@@ -1550,22 +1547,26 @@ class HuggingFaceEmbeddingModel:
         for i in tqdm(range(0, len(texts), self.batch_size), disable=not show_progress):
             batch = texts[i:i + self.batch_size]
             
-            # Create payload for batch
-            payload = {
-                "inputs": {
-                    "source_sentence": batch[0],  # Use first text as source
-                    "sentences": batch  # Compare with all texts in batch
+            # Process each text individually to get its embedding
+            for text in batch:
+                # Create payload for single text
+                payload = {
+                    "inputs": text,
+                    "options": {"wait_for_model": True}
                 }
-            }
-            
-            # Get embeddings for batch
-            embeddings = self._get_embeddings(payload)
-            all_embeddings.extend(embeddings)
+                
+                # Get embedding for single text
+                embedding = self._get_embedding(payload)
+                if embedding is not None:
+                    all_embeddings.append(embedding)
         
+        if not all_embeddings:
+            raise RuntimeError("Failed to generate any embeddings")
+            
         return np.array(all_embeddings)
     
-    def _get_embeddings(self, payload: dict) -> List[np.ndarray]:
-        """Get embeddings with retry logic"""
+    def _get_embedding(self, payload: dict) -> Optional[np.ndarray]:
+        """Get embedding for single text with retry logic"""
         for attempt in range(self.max_retries):
             try:
                 response = requests.post(
@@ -1576,15 +1577,16 @@ class HuggingFaceEmbeddingModel:
                 )
                 
                 if response.status_code == 200:
-                    # Extract embeddings from response
-                    embeddings_data = response.json()
-                    # Convert to numpy arrays
-                    embeddings = [np.array(emb) for emb in embeddings_data]
-                    return embeddings
-                    
+                    embedding_data = response.json()
+                    # Get the first embedding (should only be one)
+                    if isinstance(embedding_data, list) and embedding_data:
+                        return np.array(embedding_data[0])
                 else:
-                    self.logger.warning(f"API request failed with status {response.status_code}")
-                    if attempt < self.max_retries - 1:
+                    self.logger.warning(f"API request failed with status {response.status_code}: {response.text}")
+                    if "Model is loading" in response.text:
+                        # Wait longer if model is loading
+                        time.sleep(20)
+                    elif attempt < self.max_retries - 1:
                         time.sleep(self.retry_delay)
                     
             except Exception as e:
@@ -1592,16 +1594,16 @@ class HuggingFaceEmbeddingModel:
                 if attempt < self.max_retries - 1:
                     time.sleep(self.retry_delay)
         
-        raise RuntimeError(f"Failed to get embeddings after {self.max_retries} attempts")
+        self.logger.error(f"Failed to get embedding after {self.max_retries} attempts")
+        return None
     
     def get_sentence_embedding_dimension(self) -> int:
         """Return embedding dimension"""
         return self.dimension
-
+    
     def __del__(self):
         """Cleanup resources"""
         pass
-
 
 
 
@@ -4381,6 +4383,11 @@ class RAGPipeline:
 
             # Generate embeddings (will use embedding cache internally)
             embeddings = self.embedding_model.generate_embeddings(chunk_texts)
+
+            # Add logging for debugging
+            self.logger.info(f"Generated {len(embeddings)} embeddings")
+            self.logger.info(f"Number of texts: {len(chunk_texts)}")
+            self.logger.info(f"Number of metadata items: {len(chunk_metadata)}")
 
             # Store in vector database
             self.vector_store.insert(chunk_texts, embeddings, chunk_metadata)
