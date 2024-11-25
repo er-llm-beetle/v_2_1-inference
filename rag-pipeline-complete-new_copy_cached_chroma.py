@@ -1438,172 +1438,172 @@ class EmbeddingCache:
 
 
 
-# class EmbeddingModel:
-#     """Memory-optimized embedding model"""
-    
-#     def __init__(
-#         self,
-#         # model_name: str = "BAAI/bge-m3",
-#         model_name: str = "LocalDoc/TEmA-small",
-#         device: str = None,
-#         max_length: int = 512
-#     ):
-#         self.max_length = max_length
-#         if device is None:
-#             if torch.cuda.is_available() and torch.cuda.get_device_properties(0).total_memory > 4 * 1024 * 1024 * 1024:  # 4GB
-#                 self.device = "cuda"
-#             else:
-#                 self.device = "cpu"
-#             # self.device = "cuda" if torch.cuda.is_available() else "cpu"
-#         else:
-#             self.device = device
-            
-#         # Load model with memory optimization
-#         try:
-#             # Set memory efficient attention
-#             torch.backends.cuda.max_split_size_mb = 512  # Limit CUDA memory split size
-            
-#             self.model = SentenceTransformer(
-#                 model_name,
-#                 device=self.device
-#             )
-#             # Enable memory optimization
-#             self.model.half()  # Convert to FP16 to save memory
-#             torch.cuda.empty_cache()  # Clear CUDA cache
-#         except Exception as e:
-#             logger.error(f"Failed to load model: {str(e)}")
-#             raise
-        
-#         self.dimension = self.model.get_sentence_embedding_dimension()
-    
-#     def generate_embeddings(
-#         self,
-#         texts: List[str],
-#         batch_size: int = 4  # Smaller batch size to manage memory
-#     ) -> np.ndarray:
-#         """Generate embeddings with memory management"""
-#         embeddings = []
-        
-#         try:
-#             # Process in smaller batches
-#             for i in tqdm(range(0, len(texts), batch_size)):
-#                 batch = texts[i:i + batch_size]
-
-#                 # Clear cache before processing each batch
-#                 if self.device == "cuda":
-#                     torch.cuda.empty_cache()
-
-#                 with torch.no_grad():  # Disable gradient computation
-#                     batch_embeddings = self.model.encode(
-#                         batch,
-#                         normalize_embeddings=True,
-#                         show_progress_bar=False,
-#                         convert_to_numpy=True
-#                     )
-#                 embeddings.extend(batch_embeddings)
-                
-#                 # Clear memory after each batch
-#                 if self.device == "cuda":
-#                     torch.cuda.empty_cache()
-                    
-#             return np.array(embeddings)
-            
-#         except Exception as e:
-#             logger.error(f"Embedding generation failed: {str(e)}")
-#             raise
-
-import requests
-
-
-class HuggingFaceEmbeddingModel:
-    """Embedding model using Hugging Face's Inference API with simple requests"""
+class EmbeddingModel:
+    """Memory-optimized embedding model"""
     
     def __init__(
         self,
-        model_name: str = "BAAI/bge-m3",
-        api_key: str = None,
+        # model_name: str = "BAAI/bge-m3",
+        model_name: str = "LocalDoc/TEmA-small",
         device: str = None,
-        batch_size: int = 8,
-        max_retries: int = 3,
-        retry_delay: int = 1
+        max_length: int = 512
     ):
-        self.api_url = f"https://api-inference.huggingface.co/models/{model_name}"
-        self.headers = {"Authorization": f"Bearer {api_key}"}
-        self.batch_size = batch_size
-        self.max_retries = max_retries
-        self.retry_delay = retry_delay
-        self.dimension = 1024
-        self.logger = logging.getLogger(__name__)
+        self.max_length = max_length
+        if device is None:
+            if torch.cuda.is_available() and torch.cuda.get_device_properties(0).total_memory > 4 * 1024 * 1024 * 1024:  # 4GB
+                self.device = "cuda"
+            else:
+                self.device = "cpu"
+            # self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        else:
+            self.device = device
+            
+        # Load model with memory optimization
+        try:
+            # Set memory efficient attention
+            torch.backends.cuda.max_split_size_mb = 512  # Limit CUDA memory split size
+            
+            self.model = SentenceTransformer(
+                model_name,
+                device=self.device
+            )
+            # Enable memory optimization
+            self.model.half()  # Convert to FP16 to save memory
+            torch.cuda.empty_cache()  # Clear CUDA cache
+        except Exception as e:
+            logger.error(f"Failed to load model: {str(e)}")
+            raise
+        
+        self.dimension = self.model.get_sentence_embedding_dimension()
     
     def generate_embeddings(
         self,
         texts: List[str],
-        show_progress: bool = True
+        batch_size: int = 4  # Smaller batch size to manage memory
     ) -> np.ndarray:
-        """Generate embeddings for a list of texts"""
-        all_embeddings = []
+        """Generate embeddings with memory management"""
+        embeddings = []
         
-        # Process in batches
-        for i in tqdm(range(0, len(texts), self.batch_size), disable=not show_progress):
-            batch = texts[i:i + self.batch_size]
-            
-            # Process each text individually to get its embedding
-            for text in batch:
-                # Create payload for single text
-                payload = {
-                    "inputs": text,
-                    "options": {"wait_for_model": True}
-                }
+        try:
+            # Process in smaller batches
+            for i in tqdm(range(0, len(texts), batch_size)):
+                batch = texts[i:i + batch_size]
+
+                # Clear cache before processing each batch
+                if self.device == "cuda":
+                    torch.cuda.empty_cache()
+
+                with torch.no_grad():  # Disable gradient computation
+                    batch_embeddings = self.model.encode(
+                        batch,
+                        normalize_embeddings=True,
+                        show_progress_bar=False,
+                        convert_to_numpy=True
+                    )
+                embeddings.extend(batch_embeddings)
                 
-                # Get embedding for single text
-                embedding = self._get_embedding(payload)
-                if embedding is not None:
-                    all_embeddings.append(embedding)
-        
-        if not all_embeddings:
-            raise RuntimeError("Failed to generate any embeddings")
-            
-        return np.array(all_embeddings)
-    
-    def _get_embedding(self, payload: dict) -> Optional[np.ndarray]:
-        """Get embedding for single text with retry logic"""
-        for attempt in range(self.max_retries):
-            try:
-                response = requests.post(
-                    self.api_url,
-                    headers=self.headers,
-                    json=payload,
-                    timeout=10
-                )
-                
-                if response.status_code == 200:
-                    embedding_data = response.json()
-                    # Get the first embedding (should only be one)
-                    if isinstance(embedding_data, list) and embedding_data:
-                        return np.array(embedding_data[0])
-                else:
-                    self.logger.warning(f"API request failed with status {response.status_code}: {response.text}")
-                    if "Model is loading" in response.text:
-                        # Wait longer if model is loading
-                        time.sleep(20)
-                    elif attempt < self.max_retries - 1:
-                        time.sleep(self.retry_delay)
+                # Clear memory after each batch
+                if self.device == "cuda":
+                    torch.cuda.empty_cache()
                     
-            except Exception as e:
-                self.logger.warning(f"Attempt {attempt + 1} failed: {str(e)}")
-                if attempt < self.max_retries - 1:
-                    time.sleep(self.retry_delay)
+            return np.array(embeddings)
+            
+        except Exception as e:
+            logger.error(f"Embedding generation failed: {str(e)}")
+            raise
+
+import requests
+
+
+# class HuggingFaceEmbeddingModel:
+#     """Embedding model using Hugging Face's Inference API with simple requests"""
+    
+#     def __init__(
+#         self,
+#         model_name: str = "BAAI/bge-m3",
+#         api_key: str = None,
+#         device: str = None,
+#         batch_size: int = 8,
+#         max_retries: int = 3,
+#         retry_delay: int = 1
+#     ):
+#         self.api_url = f"https://api-inference.huggingface.co/models/{model_name}"
+#         self.headers = {"Authorization": f"Bearer {api_key}"}
+#         self.batch_size = batch_size
+#         self.max_retries = max_retries
+#         self.retry_delay = retry_delay
+#         self.dimension = 1024
+#         self.logger = logging.getLogger(__name__)
+    
+#     def generate_embeddings(
+#         self,
+#         texts: List[str],
+#         show_progress: bool = True
+#     ) -> np.ndarray:
+#         """Generate embeddings for a list of texts"""
+#         all_embeddings = []
         
-        self.logger.error(f"Failed to get embedding after {self.max_retries} attempts")
-        return None
+#         # Process in batches
+#         for i in tqdm(range(0, len(texts), self.batch_size), disable=not show_progress):
+#             batch = texts[i:i + self.batch_size]
+            
+#             # Process each text individually to get its embedding
+#             for text in batch:
+#                 # Create payload for single text
+#                 payload = {
+#                     "inputs": text,
+#                     "options": {"wait_for_model": True}
+#                 }
+                
+#                 # Get embedding for single text
+#                 embedding = self._get_embedding(payload)
+#                 if embedding is not None:
+#                     all_embeddings.append(embedding)
+        
+#         if not all_embeddings:
+#             raise RuntimeError("Failed to generate any embeddings")
+            
+#         return np.array(all_embeddings)
     
-    def get_sentence_embedding_dimension(self) -> int:
-        """Return embedding dimension"""
-        return self.dimension
+#     def _get_embedding(self, payload: dict) -> Optional[np.ndarray]:
+#         """Get embedding for single text with retry logic"""
+#         for attempt in range(self.max_retries):
+#             try:
+#                 response = requests.post(
+#                     self.api_url,
+#                     headers=self.headers,
+#                     json=payload,
+#                     timeout=10
+#                 )
+                
+#                 if response.status_code == 200:
+#                     embedding_data = response.json()
+#                     # Get the first embedding (should only be one)
+#                     if isinstance(embedding_data, list) and embedding_data:
+#                         return np.array(embedding_data[0])
+#                 else:
+#                     self.logger.warning(f"API request failed with status {response.status_code}: {response.text}")
+#                     if "Model is loading" in response.text:
+#                         # Wait longer if model is loading
+#                         time.sleep(20)
+#                     elif attempt < self.max_retries - 1:
+#                         time.sleep(self.retry_delay)
+                    
+#             except Exception as e:
+#                 self.logger.warning(f"Attempt {attempt + 1} failed: {str(e)}")
+#                 if attempt < self.max_retries - 1:
+#                     time.sleep(self.retry_delay)
+        
+#         self.logger.error(f"Failed to get embedding after {self.max_retries} attempts")
+#         return None
     
-    def __del__(self):
-        """Cleanup resources"""
-        pass
+#     def get_sentence_embedding_dimension(self) -> int:
+#         """Return embedding dimension"""
+#         return self.dimension
+    
+#     def __del__(self):
+#         """Cleanup resources"""
+#         pass
 
 
 
@@ -4311,7 +4311,7 @@ class RAGPipeline:
             device: str = None,
             batch_size: int = 4,
             cache_dir: str = "cache",
-            api_key: str = None  # Add this parameter
+            # api_key: str = None  # Add this parameter
         ):
             try:
                 self.logger = logging.getLogger(__name__)
@@ -4358,24 +4358,59 @@ class RAGPipeline:
 
 
 # inference api hf
-                HUGGINGFACE_API_KEY = st.secrets['HUGGINGFACE_API_KEY']
+                # HUGGINGFACE_API_KEY = st.secrets['HUGGINGFACE_API_KEY']
 
-                self.embedding_model = HuggingFaceEmbeddingModel(
-                    model_name="BAAI/bge-m3",
-                    api_key=st.secrets['HUGGINGFACE_API_KEY'],
-                    device=device,
-                    batch_size=batch_size,
-                )
+                # self.embedding_model = HuggingFaceEmbeddingModel(
+                #     model_name="BAAI/bge-m3",
+                #     api_key=st.secrets['HUGGINGFACE_API_KEY'],
+                #     device=device,
+                #     batch_size=batch_size,
+                # )
+
+# extra
+                # self.embedding_model = CachedHuggingFaceEmbeddingModel(
+                #     model_name=embedding_model,
+                #     api_key=api_key,
+                #     device=device,
+                #     batch_size=batch_size,
+                #     cache_dir=f"{cache_dir}/embeddings"
+                # )
+
+# class CachedHuggingFaceEmbeddingModel(HuggingFaceEmbeddingModel):
+#     def __init__(self, *args, cache_dir="cache/embeddings", **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.embedding_cache = EmbeddingCache(
+#             cache_dir=cache_dir,
+#             max_memory_items=10000,
+#             ttl_days=30
+#         )
+
+#     def generate_embeddings(self, texts: List[str], show_progress: bool = True) -> np.ndarray:
+#         # Check cache first
+#         cached_embeddings, texts_to_compute = self.embedding_cache.get_embeddings(texts)
+        
+#         if texts_to_compute:
+#             # Get new embeddings from API
+#             new_embeddings = super().generate_embeddings(texts_to_compute, show_progress)
+#             # Save to cache
+#             self.embedding_cache.save_embeddings(texts_to_compute, new_embeddings)
+#             # Combine with cached embeddings
+#             all_embeddings = cached_embeddings + list(new_embeddings)
+#             return np.array(all_embeddings)
+        
+#         return np.array(cached_embeddings)
+# extra
+
 # inference api hf
 
                 # Initialize embedding model with caching
-                # self.embedding_model = CachedEmbeddingModel(
-                #     model_name=embedding_model,
-                #     device=device,
-                #     cache_dir=cache_dir,
-                #     # memory_cache_size=10000,
-                #     # use_disk_cache=True
-                # )
+                self.embedding_model = CachedEmbeddingModel(
+                    model_name=embedding_model,
+                    device=device,
+                    cache_dir=cache_dir,
+                    # memory_cache_size=10000,
+                    # use_disk_cache=True
+                )
 
                 # self.embedding_model = GPTEmbeddingModel(
                 #     model_name=embedding_model,
@@ -5221,7 +5256,7 @@ def initialize_rag_pipeline():
             language="az",
             cache_dir=str(cache_dir),
             batch_size=4,
-            api_key=HUGGINGFACE_API_KEY  # Add this line
+            # api_key=HUGGINGFACE_API_KEY  # Add this line
         )
         
         log_memory_usage("After creating cache directories")
