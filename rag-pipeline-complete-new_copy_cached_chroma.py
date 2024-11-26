@@ -3414,11 +3414,11 @@ class GPTDocumentSummarizer:
                 - Verilmiş məlumatlarda birbaşa və ya dolayı cavab olmadıqda
                 - Sual tamamilə fərqli mövzu və ya sahəyə aid olduqda
             4. **Kontekstdəki əlaqəli məlumatları istifadə edin**:
-                - Məlumat tapılmadıqda belə, kontekstdəki mövcud məlumatlardan istifadə edərək cavab verin.
+                - Məlumat tapılmadıqda belə, əgər əlaqəli məlumat varsa o zaman kontekstdəki mövcud məlumatlardan istifadə edərək cavab verin.
             
             Təqdimat qaydaları:
             1. Cavabları təbii və anlaşılan dildə verin
-            3. Cavabları bir mətn şəklində, ardıcıl formada yazın
+            2. Cavabları bir mətn şəklində, ardıcıl formada yazın
             """
         }
 
@@ -4585,7 +4585,7 @@ class RAGPipeline:
         use_hyde: bool = False,     # for now
         expand_queries: bool = True
     ) -> Dict[str, Any]:
-        """Process a query through the pipeline"""
+        # process a query through the pipeline
 
 
         # V1 without Question Variations:
@@ -4700,19 +4700,18 @@ class RAGPipeline:
                 all_results.extend(variant_results)
 
                 # Process HyDE results if enabled
-                """
-                if use_hyde:
-                    hyde_doc = self.hyde.generate_hypothesis(query_variant)
-                    hyde_embedding = self.embedding_model.generate_embeddings([hyde_doc])[0]
-                    hyde_results = self.vector_store.hybrid_search(
-                        hyde_embedding,
-                        hyde_doc,
-                        limit=top_k
-                    )
-                    for result in hyde_results:
-                        result['matching_query'] = f"HyDE: {query_variant}"
-                    all_results.extend(hyde_results)
-                """
+                # 
+                # if use_hyde:
+                #     hyde_doc = self.hyde.generate_hypothesis(query_variant)
+                #     hyde_embedding = self.embedding_model.generate_embeddings([hyde_doc])[0]
+                #     hyde_results = self.vector_store.hybrid_search(
+                #         hyde_embedding,
+                #         hyde_doc,
+                #         limit=top_k
+                #     )
+                #     for result in hyde_results:
+                #         result['matching_query'] = f"HyDE: {query_variant}"
+                #     all_results.extend(hyde_results)
 
             # Deduplicate results
             unique_results = {result['id']: result for result in all_results}.values()
@@ -5339,10 +5338,10 @@ def format_chat_message(message: dict) -> None:
         st.markdown(f"🧑‍💼 **You:** {message['content']}")
     else:
         st.markdown(f"🤖 **Assistant:** {message['content']}")
-        if message.get("variations"):
-            with st.expander("Question Variations"):
-                for var in message["variations"]:
-                    st.markdown(f"- {var}")
+        # if message.get("variations"):
+        #     with st.expander("Question Variations"):
+        #         for var in message["variations"]:
+        #             st.markdown(f"- {var}")
         if message.get("context"):
             with st.expander("View Context"):
                 st.markdown(message["context"])
@@ -5375,9 +5374,9 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-    st.title("HR Policy Assistant")
+    st.title("HR Assistant")
     st.markdown("""
-    Welcome to the HR Policy Assistant! Ask any questions about HR policies and procedures.
+    Welcome to the HR Assistant! Ask any questions about HR policies and procedures.
     This system uses advanced AI to provide accurate answers based on official HR documentation.
     """)
 
@@ -5450,12 +5449,10 @@ def main():
         ### Tips for better results:
         - Be specific in your questions
         - Use clear and concise language
-        - Ask one question at a time
-        - Questions can be in Azerbaijani or English
+        - Questions can be in Azerbaijani 
         
         ### About the System:
         This assistant uses advanced natural language processing to:
-        - Understand and rephrase questions
         - Search through HR documentation
         - Generate accurate, context-aware responses
         """)
