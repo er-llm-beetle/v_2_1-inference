@@ -4303,8 +4303,8 @@ class RAGPipeline:
             collection_name: str = "azerbaijan_docs",
             chunk_size: int = 512,
             chunk_overlap: int = 50,
-            # embedding_model: str = "text-embedding-3-small",
-            embedding_model: str = "BAAI/bge-m3",
+            embedding_model: str = "text-embedding-3-large",
+            # embedding_model: str = "BAAI/bge-m3",
             host: str = "localhost",
             port: int = 19530,
             language: str = "az",
@@ -4404,19 +4404,19 @@ class RAGPipeline:
 # inference api hf
 
                 # Initialize embedding model with caching
-                self.embedding_model = CachedEmbeddingModel(
-                    model_name=embedding_model,
-                    device=device,
-                    cache_dir=cache_dir,
-                    # memory_cache_size=10000,
-                    # use_disk_cache=True
-                )
-
-                # self.embedding_model = GPTEmbeddingModel(
+                # self.embedding_model = CachedEmbeddingModel(
                 #     model_name=embedding_model,
                 #     device=device,
-                #     api_key=OPENAI_API_KEY
+                #     cache_dir=cache_dir,
+                #     # memory_cache_size=10000,
+                #     # use_disk_cache=True
                 # )
+
+                self.embedding_model = GPTEmbeddingModel(
+                    model_name=embedding_model,
+                    device=device,
+                    api_key=OPENAI_API_KEY
+                )
                 log_memory_usage("After embedding model init")
                 self.logger.info("Embedding model initialized")
                 st.write("Embedding model initialized successfully")
@@ -5249,8 +5249,8 @@ def initialize_rag_pipeline():
         # Initialize components with detailed status updates
         pipeline = RAGPipeline(
             collection_name="azerbaijan_docs",
-            # embedding_model="text-embedding-3-small",
-            embedding_model="BAAI/bge-m3", # Local model
+            embedding_model="text-embedding-3-large",
+            # embedding_model="BAAI/bge-m3", # Local model
             chunk_size=1024,
             chunk_overlap=128,
             language="az",
