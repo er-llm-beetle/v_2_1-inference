@@ -5244,7 +5244,7 @@ def initialize_rag_pipeline():
         logger.info("Starting pipeline initialization")
         log_memory_usage("Before initialization")
 
-        HUGGINGFACE_API_KEY = st.secrets['HUGGINGFACE_API_KEY']
+        # HUGGINGFACE_API_KEY = st.secrets['HUGGINGFACE_API_KEY']
 
         # Initialize components with detailed status updates
         pipeline = RAGPipeline(
