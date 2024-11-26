@@ -2440,18 +2440,17 @@ class ChromaDBVectorStore:
         try:
             # Delete collection if it exists
             try:
-                self.client.delete_collection(self.collection_name)
-            except Exception as e:
-                self.logger.warning(f"No existing collection to delete: {str(e)}")
-            
-            # Create new collection
-            collection = self.client.create_collection(
-                name=self.collection_name,
-                metadata={"hnsw:space": "cosine"},
-                embedding_function=None
-            )
-            
-            return collection
+                return self.client.get_collection(
+                    name=self.collection_name,
+                    embedding_function=None
+                )
+            except Exception:
+                # If collection doesn't exist, create new one
+                return self.client.create_collection(
+                    name=self.collection_name,
+                    metadata={"hnsw:space": "cosine"},
+                    embedding_function=None
+                )
             
         except Exception as e:
             self.logger.error(f"Failed to create collection: {str(e)}")
